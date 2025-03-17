@@ -1,0 +1,13 @@
+[Unit]
+Description=Discord Status Bot
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/godiscordbot
+ExecStart=/opt/godiscordbot/discordbot
+Restart=always
+Environment=DISCORD_BOT_TOKEN=
+User=%USER%
+
+[Install]
+WantedBy=multi-user.target

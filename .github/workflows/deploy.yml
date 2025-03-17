@@ -1,0 +1,93 @@
+name: Deploy DiscordBot
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Build the bot
+        run: |
+          go mod tidy
+          go build -o discordbot main.go
+
+      - name: Substitute placeholders in discord-status-bot.service
+        run: |
+          # Проверяем, существует ли файл
+          if [ ! -f systemd/discord-status-bot.service ]; then
+            echo "Error: systemd/discord-status-bot.service not found."
+            exit 1
+          fi
+
+          # Заменяем плейсхолдеры для пользователя и группы
+          sed -e "s|User=youruser|User=${{ secrets.USER }}|g" \
+              -e "s|Group=yourgroup|Group=${{ secrets.USER }}|g" \
+              -e "s|Environment=DISCORD_BOT_TOKEN=|Environment=DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}|g" \
+              systemd/discord-status-bot.service > systemd/discord-status-bot.service.tmp
+
+          # Перемещаем временный файл обратно
+          mv systemd/discord-status-bot.service.tmp systemd/discord-status-bot.service
+
+      - name: Create directory for bot
+        run: |
+          # Создаем директорию для бота
+          sudo mkdir -p /opt/godiscordbot
+          sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/godiscordbot
+
+      - name: Stop existing services and processes
+        run: |
+          # Останавливаем существующие службы
+          sudo systemctl stop discord-status-bot.service || true
+          
+          # Принудительно завершаем любые оставшиеся процессы
+          echo "Searching for processes to kill..."
+          if pgrep -f "/opt/godiscordbot/discordbot"; then
+            echo "Process is still running, killing with SIGKILL"
+            sudo pkill -9 -f "/opt/godiscordbot/discordbot" || true
+            sleep 3
+          fi
+
+          # Проверяем еще раз и показываем список
+          if pgrep -f "/opt/godiscordbot/discordbot"; then
+            echo "WARNING: Process still running! Details:"
+            sudo ps aux | grep discordbot
+            # Убиваем все процессы принудительно по имени файла
+            sudo fuser -k /opt/godiscordbot/discordbot 2>/dev/null || true
+            sleep 2
+          fi
+
+      - name: Copy executable and service file
+        run: |
+          # Копируем исполняемый файл с временным именем
+          sudo cp discordbot /opt/godiscordbot/discordbot.new
+          sudo chmod +x /opt/godiscordbot/discordbot.new
+          
+          # Атомарное перемещение файла
+          sudo mv -f /opt/godiscordbot/discordbot.new /opt/godiscordbot/discordbot
+
+          # Копируем файл службы
+          sudo cp systemd/discord-status-bot.service /etc/systemd/system/
+
+      - name: Configure systemd
+        run: |
+          # Обновляем конфигурацию systemd
+          sudo systemctl daemon-reload
+
+          # Включаем и запускаем службу
+          sudo systemctl enable discord-status-bot.service
+          sudo systemctl restart discord-status-bot.service
+          
+          # Показываем статус для проверки
+          sudo systemctl status discord-status-bot.service --no-pager
