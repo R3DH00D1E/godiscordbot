@@ -26,8 +26,8 @@ jobs:
             exit 1
           fi
 
-          # Получаем имя текущего пользователя
-          CURRENT_USER=$(whoami)
+          # Получаем имя пользователя из переменной GitHub
+          CURRENT_USER="${{ secrets.USER }}"
           # Получаем путь к домашней директории пользователя
           HOME_DIR="/home/$CURRENT_USER"
           
@@ -55,8 +55,8 @@ jobs:
 
       - name: Create directory for bot
         run: |
-          # Получаем имя текущего пользователя
-          CURRENT_USER=$(whoami)
+          # Получаем имя пользователя из переменной GitHub
+          CURRENT_USER="${{ secrets.USER }}"
           # Получаем путь к домашней директории пользователя
           HOME_DIR="/home/$CURRENT_USER"
           
@@ -69,8 +69,8 @@ jobs:
           # Останавливаем существующие службы
           sudo systemctl stop godiscordbot.service || true
           
-          # Получаем имя текущего пользователя
-          CURRENT_USER=$(whoami)
+          # Получаем имя пользователя из переменной GitHub
+          CURRENT_USER="${{ secrets.USER }}"
           # Определяем путь к исполняемому файлу
           HOME_DIR="/home/$CURRENT_USER"
           BOT_PATH="$HOME_DIR/godiscordbot/godiscordbot"
@@ -94,8 +94,8 @@ jobs:
 
       - name: Copy executable and service file
         run: |
-          # Получаем имя текущего пользователя
-          CURRENT_USER=$(whoami)
+          # Получаем имя пользователя из переменной GitHub
+          CURRENT_USER="${{ secrets.USER }}"
           # Получаем путь к домашней директории пользователя
           HOME_DIR="/home/$CURRENT_USER"
           BOT_DIR="$HOME_DIR/godiscordbot"
