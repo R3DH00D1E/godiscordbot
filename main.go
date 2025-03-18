@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
+	// "os/signal"
+	// "syscall"
 
 	"godiscordbot/config"
 
@@ -56,7 +56,7 @@ func main() {
 	defer sess.Close()
 
 	//fmt.Println("Админ-бот запущен. Нажмите CTRL+C для выхода.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-sc
+	// sc := make(chan os.Signal, 1)
+	// signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	// <-sc
 }
