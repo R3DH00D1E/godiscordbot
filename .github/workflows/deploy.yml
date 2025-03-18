@@ -1,4 +1,4 @@
-name: Deploy DiscordBot
+name: Deploy goDiscordBot
 
 on:
   push:
@@ -16,69 +16,111 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.24.1'
 
       - name: Build the bot
         run: |
           go mod tidy
-          go build -o discordbot main.go
+          go build -o godiscordbot main.go
 
-      - name: Substitute placeholders in discord-status-bot.service
+      - name: Substitute placeholders in godiscordbot.service
         run: |
           # Проверяем, существует ли файл
-          if [ ! -f systemd/discord-status-bot.service ]; then
-            echo "Error: systemd/discord-status-bot.service not found."
+          if [ ! -f systemd/godiscordbot.service ]; then
+            echo "Error: systemd/godiscordbot.service not found."
             exit 1
           fi
 
-          # Заменяем плейсхолдеры для пользователя и группы
-          sed -e "s|User=youruser|User=${{ secrets.USER }}|g" \
-              -e "s|Group=yourgroup|Group=${{ secrets.USER }}|g" \
-              -e "s|Environment=DISCORD_BOT_TOKEN=|Environment=DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}|g" \
-              systemd/discord-status-bot.service > systemd/discord-status-bot.service.tmp
+          # Получаем имя текущего пользователя
+          CURRENT_USER=$(whoami)
+          # Получаем путь к домашней директории пользователя
+          HOME_DIR="/home/$CURRENT_USER"
+          
+          # Заменяем плейсхолдеры для пользователя и путей
+          sed -e "s|User=youruser|User=$CURRENT_USER|g" \
+              -e "s|WorkingDirectory=/home/youruser/godiscordbot|WorkingDirectory=$HOME_DIR/godiscordbot|g" \
+              -e "s|ExecStart=/home/youruser/godiscordbot/godiscordbot|ExecStart=$HOME_DIR/godiscordbot/godiscordbot|g" \
+              -e "s|Environment=\"CONFIG_PATH=/home/youruser/godiscordbot/config/config.json\"|Environment=\"CONFIG_PATH=$HOME_DIR/godiscordbot/config/config.json\" Environment=\"DISCORD_BOT_TOKEN=${{ secrets.ds_token }}\"|g" \
+              systemd/godiscordbot.service > systemd/godiscordbot.service.tmp
 
           # Перемещаем временный файл обратно
-          mv systemd/discord-status-bot.service.tmp systemd/discord-status-bot.service
+          mv systemd/godiscordbot.service.tmp systemd/godiscordbot.service
+      
+      - name: Create or update config file
+        run: |
+          # Создаем директорию для конфигов, если она еще не существует
+          mkdir -p config
+          
+          # Создаем или перезаписываем конфиг файл
+          cat > config/config.json << EOF
+          {
+            "discord_token": "${{ secrets.ds_token }}"
+          }
+          EOF
+          
+          echo "Config file updated with GitHub variables"
 
       - name: Create directory for bot
         run: |
-          # Создаем директорию для бота
-          sudo mkdir -p /opt/godiscordbot
-          sudo chown ${{ secrets.USER }}:${{ secrets.USER }} /opt/godiscordbot
+          # Получаем имя текущего пользователя
+          CURRENT_USER=$(whoami)
+          # Получаем путь к домашней директории пользователя
+          HOME_DIR="/home/$CURRENT_USER"
+          
+          # Создаем директорию для бота в домашней папке
+          mkdir -p $HOME_DIR/godiscordbot/config
+          sudo chown -R $CURRENT_USER:$CURRENT_USER $HOME_DIR/godiscordbot
 
       - name: Stop existing services and processes
         run: |
           # Останавливаем существующие службы
-          sudo systemctl stop discord-status-bot.service || true
+          sudo systemctl stop godiscordbot.service || true
+          
+          # Получаем имя текущего пользователя
+          CURRENT_USER=$(whoami)
+          # Определяем путь к исполняемому файлу
+          HOME_DIR="/home/$CURRENT_USER"
+          BOT_PATH="$HOME_DIR/godiscordbot/godiscordbot"
           
           # Принудительно завершаем любые оставшиеся процессы
           echo "Searching for processes to kill..."
-          if pgrep -f "/opt/godiscordbot/discordbot"; then
+          if pgrep -f "$BOT_PATH"; then
             echo "Process is still running, killing with SIGKILL"
-            sudo pkill -9 -f "/opt/godiscordbot/discordbot" || true
+            sudo pkill -9 -f "$BOT_PATH" || true
             sleep 3
           fi
 
           # Проверяем еще раз и показываем список
-          if pgrep -f "/opt/godiscordbot/discordbot"; then
+          if pgrep -f "$BOT_PATH"; then
             echo "WARNING: Process still running! Details:"
-            sudo ps aux | grep discordbot
+            sudo ps aux | grep godiscordbot
             # Убиваем все процессы принудительно по имени файла
-            sudo fuser -k /opt/godiscordbot/discordbot 2>/dev/null || true
+            sudo fuser -k "$BOT_PATH" 2>/dev/null || true
             sleep 2
           fi
 
       - name: Copy executable and service file
         run: |
+          # Получаем имя текущего пользователя
+          CURRENT_USER=$(whoami)
+          # Получаем путь к домашней директории пользователя
+          HOME_DIR="/home/$CURRENT_USER"
+          BOT_DIR="$HOME_DIR/godiscordbot"
+          
           # Копируем исполняемый файл с временным именем
-          sudo cp discordbot /opt/godiscordbot/discordbot.new
-          sudo chmod +x /opt/godiscordbot/discordbot.new
+          cp godiscordbot $BOT_DIR/godiscordbot.new
+          chmod +x $BOT_DIR/godiscordbot.new
           
           # Атомарное перемещение файла
-          sudo mv -f /opt/godiscordbot/discordbot.new /opt/godiscordbot/discordbot
+          mv -f $BOT_DIR/godiscordbot.new $BOT_DIR/godiscordbot
 
           # Копируем файл службы
-          sudo cp systemd/discord-status-bot.service /etc/systemd/system/
+          sudo cp systemd/godiscordbot.service /etc/systemd/system/
+          
+          # Копируем конфигурационный файл
+          mkdir -p $BOT_DIR/config
+          cp config/config.json $BOT_DIR/config/
+          sudo chown -R $CURRENT_USER:$CURRENT_USER $BOT_DIR
 
       - name: Configure systemd
         run: |
@@ -86,8 +128,8 @@ jobs:
           sudo systemctl daemon-reload
 
           # Включаем и запускаем службу
-          sudo systemctl enable discord-status-bot.service
-          sudo systemctl restart discord-status-bot.service
+          sudo systemctl enable godiscordbot.service
+          sudo systemctl restart godiscordbot.service
           
           # Показываем статус для проверки
-          sudo systemctl status discord-status-bot.service --no-pager
+          sudo systemctl status godiscordbot.service --no-pager

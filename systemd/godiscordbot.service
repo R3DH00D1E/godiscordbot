@@ -1,0 +1,13 @@
+[Unit]
+Description=DiscordBot
+After=network.target
+
+[Service]
+WorkingDirectory=/home/youruser/godiscordbot
+ExecStart=/home/youruser/godiscordbot/godiscordbot
+Restart=always
+Environment="CONFIG_PATH=/home/youruser/godiscordbot/config/config.json"
+User=youruser
+
+[Install]
+WantedBy=multi-user.target
