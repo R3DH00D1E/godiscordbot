@@ -9,7 +9,6 @@ import (
 	"godiscordbot/config"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/labstack/gommon/log"
 )
 
 var (
@@ -20,7 +19,7 @@ var (
 func init() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+		fmt.Printf("Ошибка загрузки конфигурации: %v", err)
 	}
 
 	token = cfg.DSToken
@@ -33,7 +32,7 @@ func init() {
 func main() {
 	sess, err := discordgo.New("Bot " + token)
 	if err != nil {
-		log.Fatal("Ошибка создания сессии Discord:", err)
+		fmt.Println("Ошибка создания сессии Discord:", err)
 		return
 	}
 
@@ -51,12 +50,12 @@ func main() {
 
 	err = sess.Open()
 	if err != nil {
-		log.Fatal("Ошибка открытия соединения:", err)
+		fmt.Println("Ошибка открытия соединения:", err)
 		return
 	}
 	defer sess.Close()
 
-	fmt.Println("Админ-бот запущен. Нажмите CTRL+C для выхода.")
+	//fmt.Println("Админ-бот запущен. Нажмите CTRL+C для выхода.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
