@@ -3,11 +3,11 @@ Description=DiscordBot
 After=network.target
 
 [Service]
-WorkingDirectory=/home/youruser/godiscordbot
-ExecStart=/home/youruser/godiscordbot/godiscordbot
+WorkingDirectory=/home/$CURRENT_USER/godiscordbot
+ExecStart=/home/$CURRENT_USER/godiscordbot/godiscordbot
 Restart=always
-Environment="CONFIG_PATH=/home/youruser/godiscordbot/config/config.json"
-User=youruser
+Environment="CONFIG_PATH=/home/$CURRENT_USER/godiscordbot/config.json"
+User=$CURRENT_USER
 
 [Install]
 WantedBy=multi-user.target
