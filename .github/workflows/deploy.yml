@@ -35,7 +35,7 @@ jobs:
           sed -e "s|User=youruser|User=$CURRENT_USER|g" \
               -e "s|WorkingDirectory=/home/youruser/godiscordbot|WorkingDirectory=$HOME_DIR/godiscordbot|g" \
               -e "s|ExecStart=/home/youruser/godiscordbot/godiscordbot|ExecStart=$HOME_DIR/godiscordbot/godiscordbot|g" \
-              -e "s|Environment=\"CONFIG_PATH=/home/youruser/godiscordbot/config/config.json\"|Environment=\"CONFIG_PATH=$HOME_DIR/godiscordbot/config/config.json\" Environment=\"DISCORD_BOT_TOKEN=${{ secrets.ds_token }}\"|g" \
+              -e "s|Environment=\"CONFIG_PATH=/home/youruser/godiscordbot/config.json\"|Environment=\"CONFIG_PATH=$HOME_DIR/godiscordbot/config.json\" Environment=\"ds_token=${{ secrets.ds_token }}\"|g" \
               systemd/godiscordbot.service > systemd/godiscordbot.service.tmp
 
           # Перемещаем временный файл обратно
@@ -44,12 +44,10 @@ jobs:
       - name: Create or update config file
         run: |
           # Создаем директорию для конфигов, если она еще не существует
-          mkdir -p config
-          
           # Создаем или перезаписываем конфиг файл
-          cat > config/config.json << EOF
+          cat > config.json << EOF
           {
-            "discord_token": "${{ secrets.ds_token }}"
+            "ds_token": "${{ secrets.ds_token }}"
           }
           EOF
           
@@ -63,7 +61,7 @@ jobs:
           HOME_DIR="/home/$CURRENT_USER"
           
           # Создаем директорию для бота в домашней папке
-          mkdir -p $HOME_DIR/godiscordbot/config
+          mkdir -p $HOME_DIR/godiscordbot/
           sudo chown -R $CURRENT_USER:$CURRENT_USER $HOME_DIR/godiscordbot
 
       - name: Stop existing services and processes

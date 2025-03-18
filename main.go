@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	// "os/signal"
 	// "syscall"
 
@@ -25,7 +24,6 @@ func init() {
 	token = cfg.DSToken
 	if token == "" {
 		fmt.Println("Отсутствует токен Discord бота в переменных окружения")
-		os.Exit(1)
 	}
 }
 
