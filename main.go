@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"godiscordbot/config"
 
@@ -31,21 +29,11 @@ func init() {
 }
 
 func main() {
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSHandshakeTimeout: 20 * time.Second,
-			IdleConnTimeout:     90 * time.Second,
-		},
-	}
-
 	sess, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("Ошибка создания сессии Discord:", err)
 		return
 	}
-
-	sess.Client = httpClient
 
 	sess.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Author.ID == s.State.User.ID {
