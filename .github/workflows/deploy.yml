@@ -111,8 +111,7 @@ jobs:
           sudo cp systemd/godiscordbot.service /etc/systemd/system/
           
           # Копируем конфигурационный файл
-          mkdir -p $BOT_DIR/config
-          cp config/config.json $BOT_DIR/config/
+          cp config/config.json $BOT_DIR/
           sudo chown -R $CURRENT_USER:$CURRENT_USER $BOT_DIR
 
       - name: Configure systemd
