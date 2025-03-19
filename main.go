@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	token  string
-	prefix = "!"
+	token string
+	//prefix = "!"
 )
 
 func init() {
@@ -21,10 +21,10 @@ func init() {
 	if err != nil {
 		fmt.Printf("Ошибка загрузки конфигурации: %v", err)
 	}
-
-	token = cfg.DSToken
+	var token = cfg.DSToken
 	if token == "" {
 		fmt.Println("Отсутствует токен Discord бота в переменных окружения")
+		os.Exit(1)
 	}
 }
 
