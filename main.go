@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	token string
-	//prefix = "!"
+	token  string
+	prefix = "!"
 )
 
 func init() {
